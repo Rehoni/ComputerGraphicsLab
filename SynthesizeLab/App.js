@@ -24,24 +24,25 @@ function App(ch, lh, dh) {
     program = initShaders(gl, "vertex-shader", "fragment-shader");
     gl.useProgram(program);
 
+    //创建相机并绑定相机鼠标交互。
+    camera = new Camera();
+    camera.setLocation(0, 2, 10);
+    camera.onChange = this.draw;
+    interactor = new CameraInteractor(camera, canvas);
+
+    //初始化各个着色器变量。
     aVertexPosition = gl.getAttribLocation(program, "aVertexPosition");
     aVertexColor = gl.getAttribLocation(program, "aVertexColor");
     aVertexTextureCoords = gl.getAttribLocation(
       program,
       "aVertexTextureCoords"
     );
-
-    camera = new Camera();
-    camera.setLocation(0, 2, 10);
-    camera.onChange = this.draw;
-    interactor = new CameraInteractor(camera, canvas);
-
     uMVMatrix = gl.getUniformLocation(program, "uMVMatrix");
     uTMatrix = gl.getUniformLocation(program, "uTMatrix");
     uPMatrix = gl.getUniformLocation(program, "uPMatrix");
     uColor = gl.getUniformLocation(program, "uColor");
+    uNMMatrix = gl.getUniformLocation(program, "uNMMatrix");
     uLightPosition = gl.getUniformLocation(program, "uLightPosition");
-
     aVertexNormal = gl.getAttribLocation(program, "aVertexNormal");
     uAmbientProduct = gl.getUniformLocation(program, "uAmbientProduct");
     uDiffuseProduct = gl.getUniformLocation(program, "uDiffuseProduct");
@@ -50,12 +51,16 @@ function App(ch, lh, dh) {
     uTexture_0_xiaohei = gl.getUniformLocation(program, "uTexture_0_xiaohei");
     uUseTexture = gl.getUniformLocation(program, "uUseTexture");
     aTextureCoord = gl.getAttribLocation(program, "aTextureCoord");
+
+    //向Scene中添加一个墙对象。
     Wall.build();
     Scene.addObject(Wall);
 
+    //向Scene中添加一个线框地板对象。
     Floor.build(40, 20);
     Scene.addObject(Floor);
 
+    //创建两只嘿咻对象，并添加到Scene对象中。
     heixiu = new Heixiu();
     heixiu2 = new Heixiu();
     heixiu.setLocation(3, 1, -3);
@@ -67,12 +72,15 @@ function App(ch, lh, dh) {
     Scene.addObject(heixiu);
     Scene.addObject(heixiu2);
 
+    //创建一只小黑对象，并添加到Scene对象中。
     Xiaohei.build();
     Scene.addObject(Xiaohei);
+
+    //构造光源对象，并添加到Scene对象中。
     Light.build();
     Scene.addObject(Light);
 
-
+    //设置按钮点击事件。
     document.getElementById("RotateLeft").onclick = () => {
       Xiaohei.rotateLeft();
     };
@@ -136,59 +144,60 @@ function App(ch, lh, dh) {
       isFirst = false;
     };
     document.getElementById("walk").onclick = () => {
-        if(!isFirst){
-            camera.azimuth = 0;
-            camera.elevation = 0;
-            camera.setLocation(vec3(0, 2, 10));
-            now_point_id = -1;
-            isFirst = true;
-        }
-        stopAnimate = false;
-        animate();
-        
-    };
-    document.getElementById("stop_move").onclick = () => {
-        stopAnimate = true;
-    }
-    document.getElementById("down_look").onclick = () => {
-        camera.setLocation(vec3(0, 15, 0));
-        camera.azimuth = 0;
-        camera.elevation = 0;
-        camera.changeElevation(90);
-        isFirst = false;
-        stopAnimate = true;
-    }
-    document.getElementById("toward_look").onclick = () => {
+      if (!isFirst) {
         camera.azimuth = 0;
         camera.elevation = 0;
         camera.setLocation(vec3(0, 2, 10));
-        isFirst = false;
+        now_point_id = -1;
+        isFirst = true;
+      }
+      stopAnimate = false;
+      animate();
+    };
+    //开始场景漫游（动画效果）
+    document.getElementById("stop_move").onclick = () => {
         stopAnimate = true;
     }
+    //下面五个分别对应俯视图、前视图、左视图、右视图、后视图
+    document.getElementById("down_look").onclick = () => {
+      camera.setLocation(vec3(0, 15, 0));
+      camera.azimuth = 0;
+      camera.elevation = 0;
+      camera.changeElevation(90);
+      isFirst = false;
+      stopAnimate = true;
+    };
+    document.getElementById("toward_look").onclick = () => {
+      camera.azimuth = 0;
+      camera.elevation = 0;
+      camera.setLocation(vec3(0, 2, 10));
+      isFirst = false;
+      stopAnimate = true;
+    };
     document.getElementById("left_look").onclick = () => {
-        camera.setLocation(vec3(-10, 2, -3));
-        camera.azimuth = 0;
-        camera.elevation = 0;
-        camera.changeAzimuth(90);
-        isFirst = false;
-        stopAnimate = true;
-    }
+      camera.setLocation(vec3(-10, 2, -3));
+      camera.azimuth = 0;
+      camera.elevation = 0;
+      camera.changeAzimuth(90);
+      isFirst = false;
+      stopAnimate = true;
+    };
     document.getElementById("right_look").onclick = () => {
-        camera.setLocation(vec3(10, 2, -3));
-        camera.azimuth = 0;
-        camera.elevation = 0;
-        camera.changeAzimuth(-90);
-        isFirst = false;
-        stopAnimate = true;
-    }
+      camera.setLocation(vec3(10, 2, -3));
+      camera.azimuth = 0;
+      camera.elevation = 0;
+      camera.changeAzimuth(-90);
+      isFirst = false;
+      stopAnimate = true;
+    };
     document.getElementById("back_look").onclick = () => {
-        camera.elevation = 0;
-        camera.azimuth = 0;
-        camera.changeAzimuth(-180);
-        camera.setLocation(vec3(0, 2, -15));
-        isFirst = false;
-        stopAnimate = true;
-    }
+      camera.elevation = 0;
+      camera.azimuth = 0;
+      camera.changeAzimuth(-180);
+      camera.setLocation(vec3(0, 2, -15));
+      isFirst = false;
+      stopAnimate = true;
+    };
     document.onkeydown = event => {
       var e = event || window.event || arguments.callee.caller.arguments[0];
       var dx =
@@ -250,7 +259,6 @@ function App(ch, lh, dh) {
     Xiaohei.updateTransformMatrix();
     Light.updateTransformMatrix();
   };
-  
 
   this.initTransform = () => {
     modelViewMatrix = camera.getViewTransform();
@@ -262,6 +270,10 @@ function App(ch, lh, dh) {
     );
   };
 
+  /**
+   *
+   * @param {*} object 传递object的材质属性到uniform变量中，用于计算明暗。
+   */
   this.updateLight = object => {
     if (object.materialAmbient) {
       var ambientProduct = mult(Light.lightAmbient, object.materialAmbient);
@@ -282,25 +294,26 @@ function App(ch, lh, dh) {
     }
   };
 
+  /**
+   * 根据camera的matrix更新整个场景的模型视图矩阵，并传递到uniform变量中。
+   * 同时传递projection矩阵和normalMatrix。
+   */
   this.updateMatrixUniforms = () => {
+    var modelViewMatrix = camera.getViewTransform();
     perspectiveMatrix = perspective(
       50,
       viewportWidth / viewportHeight,
       1,
       1000.0
     );
-    gl.uniformMatrix4fv(uMVMatrix, false, flatten(camera.getViewTransform()));
+    gl.uniformMatrix4fv(uMVMatrix, false, flatten(modelViewMatrix));
     gl.uniformMatrix4fv(uPMatrix, false, flatten(perspectiveMatrix));
-
-    var modelViewMatrix = camera.getViewTransform();
-    normalMatrix = [
-      vec3(modelViewMatrix[0][0], modelViewMatrix[0][1], modelViewMatrix[0][2]),
-      vec3(modelViewMatrix[1][0], modelViewMatrix[1][1], modelViewMatrix[1][2]),
-      vec3(modelViewMatrix[2][0], modelViewMatrix[2][1], modelViewMatrix[2][2])
-    ];
-    gl.uniformMatrix3fv(uNMatrix, false, flatten(normalMatrix));
+    
+    var nMMatrix = normalMatrix(modelViewMatrix, true);
+    gl.uniformMatrix3fv(uNMMatrix, false, flatten(nMMatrix));
   };
 
+  //
   this.draw = () => {
     gl.viewport(0, 0, viewportWidth, viewportHeight);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -308,32 +321,29 @@ function App(ch, lh, dh) {
 
     this.updateMatrixUniforms();
 
+    //遍历Scene对象中的每个需要绘制的对象。
     for (var i = 0; i < Scene.objects.length; i++) {
       var object = Scene.objects[i];
 
       //传递该对象的光照属性。
       this.updateLight(object);
 
+      //传递一个布尔值到片元着色器中，这样便于在片元着色器中采取不同的行动。
+      //如果useTexture为true，最后的颜色为明暗颜色*光照颜色。
+      //如果为false，就直接采用光照颜色。
       if (!object.useTexture) {
         object.useTexture = false;
       }
-
       gl.uniform1i(uUseTexture, object.useTexture);
 
-      //如果该对象定义了变换矩阵，则进行变换。
+      //如果该对象定义了变换矩阵，则传递他的变换矩阵到unform变量中。
       if (object.transformMatrix) {
         gl.uniformMatrix4fv(uTMatrix, false, flatten(object.transformMatrix));
       } else {
         gl.uniformMatrix4fv(uTMatrix, false, flatten(mat4()));
       }
 
-      // if (object.perVertexColor) {
-      //   gl.bindBuffer(gl.ARRAY_BUFFER, object.cbo);
-      //   gl.vertexAttribPointer(aVertexColor, 4, gl.FLOAT, false, 0, 0);
-      //   gl.enableVertexAttribArray(aVertexColor);
-      // } else {
-      //   gl.uniform4fv(uColor, object.color);
-      // }
+      //绑定纹理坐标的buffer到attribute变量。
       if (object.useTexture) {
         gl.bindBuffer(gl.ARRAY_BUFFER, object.tbo);
         gl.vertexAttribPointer(aTextureCoord, 2, gl.FLOAT, false, 0, 0);
@@ -351,6 +361,7 @@ function App(ch, lh, dh) {
         gl.enableVertexAttribArray(aVertexNormal);
       }
 
+      //绑定顶点坐标buffer到attribute变量。
       gl.bindBuffer(gl.ARRAY_BUFFER, object.vbo);
       gl.vertexAttribPointer(aVertexPosition, 3, gl.FLOAT, false, 0, 0);
       gl.enableVertexAttribArray(aVertexPosition);
@@ -386,87 +397,92 @@ function App(ch, lh, dh) {
     this.draw();
   };
 
-  function animate(){
-      var step = 0.1;
-      if(now_point_id == -1){
-          if(camera.position[2] > 5)
-              camera.setLocation(vec3(
-                                  camera.position[0],
-                                  camera.position[1],
-                                  camera.position[2] - step
-                             ));
-          else
-              now_point_id = 0;
-      }
-      else{
-          switch(now_point_id % 4){
-              case 0:{
-                  if(camera.position[0] < 8){
-                      camera.setLocation(vec3(
-                                              camera.position[0] + step,
-                                              camera.position[1],
-                                              camera.position[2]
-                                              ));
-                  }
-                  else{
-                      changeCameraAngle();
-                  }
-                  break;
-              }
-              case 1:{
-                  if(camera.position[2] > -10){
-                      camera.setLocation(vec3(
-                                              camera.position[0],
-                                              camera.position[1],
-                                              camera.position[2] - step
-                                              ));
-                  }
-                  else{
-                      changeCameraAngle();
-                  }
-                  break;
-              }
-              case 2:{
-                  if(camera.position[0] > -8){
-                      camera.setLocation(vec3(
-                                              camera.position[0] - step,
-                                              camera.position[1],
-                                              camera.position[2]
-                                              ));
-                  }
-                  else{
-                      changeCameraAngle();
-                  }
-                  break;
-              }
-              case 3:{
-                  if(camera.position[2] < 5){
-                      camera.setLocation(vec3(
-                                              camera.position[0],
-                                              camera.position[1],
-                                              camera.position[2] + step
-                                              ));
-                  }
-                  else{
-                      changeCameraAngle();
-                  }
-                  break;
-              }
-          }
-      }
-      if(!stopAnimate)
-          requestAnimationFrame(animate);
-  }
-    
-  function changeCameraAngle(){
-      var angle_step = 3;
-      if(changeAngle < 90){
-          changeAngle += angle_step;
-          camera.changeAzimuth(-angle_step);
-      }
-      else{
-          now_point_id++;
-          changeAngle = 0;
-      }
+    //场景漫游（动画效果）
+    function animate(){
+        //设置每一次往前走0.1
+        var step = 0.05;
+        //从初始位置往前走5个单位
+        if(now_point_id == -1){
+            if(camera.position[2] > 5)
+                camera.setLocation(vec3(
+                                        camera.position[0],
+                                        camera.position[1],
+                                        camera.position[2] - step
+                                        ));
+            else
+                now_point_id = 0;
+        }
+        //开始绕圈
+        else{
+            switch(now_point_id % 4){
+                case 0:{
+                    if(camera.position[0] < 8){
+                        camera.setLocation(vec3(
+                                                camera.position[0] + step,
+                                                camera.position[1],
+                                                camera.position[2]
+                                                ));
+                    }
+                    else{
+                        changeCameraAngle();
+                    }
+                    break;
+                }
+                case 1:{
+                    if(camera.position[2] > -10){
+                        camera.setLocation(vec3(
+                                                camera.position[0],
+                                                camera.position[1],
+                                                camera.position[2] - step
+                                                ));
+                    }
+                    else{
+                        changeCameraAngle();
+                    }
+                    break;
+                }
+                case 2:{
+                    if(camera.position[0] > -8){
+                        camera.setLocation(vec3(
+                                                camera.position[0] - step,
+                                                camera.position[1],
+                                                camera.position[2]
+                                                ));
+                    }
+                    else{
+                        changeCameraAngle();
+                    }
+                    break;
+                }
+                case 3:{
+                    if(camera.position[2] < 5){
+                        camera.setLocation(vec3(
+                                                camera.position[0],
+                                                camera.position[1],
+                                                camera.position[2] + step
+                                                ));
+                    }
+                    else{
+                        changeCameraAngle();
+                    }
+                    break;
+                }
+            }
+        }
+        //保证动画可以停止
+        if(!stopAnimate)
+            requestAnimationFrame(animate);
+    }
+
+
+  function changeCameraAngle() {
+    var angle_step = 3;
+    if (changeAngle < 90) {
+      changeAngle += angle_step;
+      camera.changeAzimuth(-angle_step);
+    } else {
+      now_point_id++;
+      changeAngle = 0;
+    }
   }
 }
